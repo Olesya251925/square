@@ -44,7 +44,7 @@ namespace Метод_наименьших_квадратов
         public MainForm()
         {
             InitializeComponent();
-            this.Size = new System.Drawing.Size(1000, 800);
+            this.Size = new System.Drawing.Size(1050, 800);
         }
 
         private void InitializeComponent()
@@ -122,7 +122,7 @@ namespace Метод_наименьших_квадратов
             applyButton.Click += ApplyButton_Click;
 
             localPointsTextBox = new TextBox();
-            localPointsTextBox.Location = new System.Drawing.Point(382, 12);
+            localPointsTextBox.Location = new System.Drawing.Point(355, 12);
             localPointsTextBox.Multiline = true;
             localPointsTextBox.Name = "textBox3";
             localPointsTextBox.Size = new System.Drawing.Size(215, 237);
@@ -131,16 +131,16 @@ namespace Метод_наименьших_квадратов
 
             dataGridView = new DataGridView();
             dataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridView.Location = new System.Drawing.Point(612, 12);
+            dataGridView.Location = new System.Drawing.Point(580, 10);
             dataGridView.Name = "dataGridView";
-            dataGridView.Size = new System.Drawing.Size(355, 245);
+            dataGridView.Size = new System.Drawing.Size(450, 245);
             dataGridView.TabIndex = 9;
 
             plotView = new PlotView();
             plotView.Location = new System.Drawing.Point(12, 255);
             plotView.Name = "plotView";
             plotView.PanCursor = System.Windows.Forms.Cursors.Hand;
-            plotView.Size = new System.Drawing.Size(900, 509);
+            plotView.Size = new System.Drawing.Size(1000, 509);
             plotView.TabIndex = 10;
             plotView.ZoomHorizontalCursor = System.Windows.Forms.Cursors.SizeWE;
             plotView.ZoomRectangleCursor = System.Windows.Forms.Cursors.SizeNWSE;
@@ -172,6 +172,13 @@ namespace Метод_наименьших_квадратов
                 if (dataGridView.Rows.Count == 0)
                 {
                     MessageBox.Show("Добавьте данные в DataGridView.", "Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Проверяем значение в textBox5
+                if (!int.TryParse(textBox5.Text, out int matrixSize) || matrixSize < 2 || matrixSize > 50)
+                {
+                    MessageBox.Show("Введите корректное значение для размера матрицы (от 2 до 50).", "Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
@@ -303,6 +310,13 @@ namespace Метод_наименьших_квадратов
             try
             {
                 int rowCount;
+
+                if (!int.TryParse(textBox5.Text, out rowCount) || rowCount < 2 || rowCount > 50)
+                {
+                    MessageBox.Show("Введите корректное число строк в диапазоне от 2 до 50.", "Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
                 if (!int.TryParse(textBox5.Text, out rowCount) || rowCount <= 0)
                 {
                     MessageBox.Show("Введите корректное число строк.", "Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
