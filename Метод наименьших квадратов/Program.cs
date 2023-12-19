@@ -374,12 +374,56 @@ namespace Метод_наименьших_квадратов
                 string[,] list = excelData.Item1;
                 int rowCount = excelData.Item2;
 
+                // Очищаем существующие данные в DataGridView и добавляем столбцы, если их нет
+                ClearDataGridView();
+
+                // Определяем размерность матрицы и вектора
+                int matrixSize = list.GetLength(1) - 1; // Уменьшаем на 1, чтобы исключить последний столбец
+                int vectorSize = rowCount;
+
+                // Добавляем столбцы с соответствующими именами в DataGridView
+                for (int i = 0; i < matrixSize; i++)
+                {
+                    dataGridView.Columns.Add($"A{i + 1}", $"A{i + 1}");
+                }
+                dataGridView.Columns.Add("B", "B");
+
                 // Заполняем DataGridView данными из Excel
                 for (int i = 0; i < rowCount; i++)
                 {
-                    dataGridView.Rows.Add(list[i, 0], list[i, 1]);
+                    object[] rowData = new object[matrixSize + 1];
+
+                    for (int j = 0; j < matrixSize; j++)
+                    {
+                        if (double.TryParse(list[i, j], NumberStyles.Any, CultureInfo.InvariantCulture, out double cellValue))
+                        {
+                            rowData[j] = cellValue;
+                        }
+                        else
+                        {
+                            rowData[j] = list[i, j];
+                        }
+                    }
+
+                    if (double.TryParse(list[i, matrixSize], NumberStyles.Any, CultureInfo.InvariantCulture, out double lastCellValue))
+                    {
+                        rowData[matrixSize] = lastCellValue;
+                    }
+                    else
+                    {
+                        rowData[matrixSize] = list[i, matrixSize];
+                    }
+
+                    dataGridView.Rows.Add(rowData);
                 }
             }
+        }
+
+
+        private void ClearDataGridView()
+        {
+            dataGridView.Columns.Clear();
+            dataGridView.Rows.Clear();
         }
 
         public struct PolynomialCoefficients
