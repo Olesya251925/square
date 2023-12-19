@@ -34,6 +34,7 @@ namespace Метод_наименьших_квадратов
         private Button clearButton;
         private Button generButton;
         private Button excelButton;
+        private Button applyButton;
         private TextBox localPointsTextBox;
         private DataGridView dataGridView;
         private PlotView plotView;
@@ -103,14 +104,22 @@ namespace Метод_наименьших_квадратов
             generButton.UseVisualStyleBackColor = true;
             generButton.Click += GenerateDataButton_Click;
 
-           excelButton = new Button();
-            excelButton.Location = new System.Drawing.Point(69, 150);
+            excelButton = new Button();
+            excelButton.Location = new System.Drawing.Point(5, 150);
             excelButton.Name = "button4";
             excelButton.Size = new System.Drawing.Size(120, 23);
             excelButton.TabIndex = 7;
             excelButton.Text = "Загрузить из EXCEL";
             excelButton.UseVisualStyleBackColor = true;
             excelButton.Click += ExcelButton_Click;
+
+            applyButton = new Button();
+            applyButton.Location = new System.Drawing.Point(150, 150);
+            applyButton.Size = new System.Drawing.Size(120, 23);
+            applyButton.TabIndex = 7;
+            applyButton.Text = "Применить ";
+            applyButton.UseVisualStyleBackColor = true;
+            applyButton.Click += ApplyButton_Click;
 
             localPointsTextBox = new TextBox();
             localPointsTextBox.Location = new System.Drawing.Point(382, 12);
@@ -150,6 +159,7 @@ namespace Метод_наименьших_квадратов
             Controls.Add(labelN);
             Controls.Add(line);
             Controls.Add(textBox5);
+            Controls.Add(applyButton);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -224,6 +234,57 @@ namespace Метод_наименьших_квадратов
             catch (Exception ex)
             {
                 MessageBox.Show("Ошибка при расчете коэффициентов: " + ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void ApplyButton_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                int matrixSize;
+                if (!int.TryParse(textBox5.Text, out matrixSize) || matrixSize <= 0)
+                {
+                    MessageBox.Show("Введите корректный размер матрицы.", "Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Очищаем существующие данные в DataGridView и добавляем столбцы, если их нет
+                ClearDataGridView();
+
+                // Добавляем столбцы с соответствующими именами в DataGridView
+                for (int i = 0; i < matrixSize; i++)
+                {
+                    string columnName = $"A{i + 1}";
+                    dataGridView.Columns.Add(columnName, columnName);
+                }
+
+                // Добавляем столбец "B", если его еще нет
+                dataGridView.Columns.Add("B", "B");
+
+                // Создаем пустую матрицу и выводим ее в DataGridView
+                double[,] emptyMatrix = new double[matrixSize, matrixSize + 1];
+                for (int i = 0; i < matrixSize; i++)
+                {
+                    for (int j = 0; j <= matrixSize; j++)
+                    {
+                        emptyMatrix[i, j] = 0.0; // Заполняем матрицу нулями
+                    }
+                }
+
+                // Выводим пустую матрицу в DataGridView
+                for (int i = 0; i < matrixSize; i++)
+                {
+                    object[] rowData = new object[matrixSize + 1];
+                    for (int j = 0; j <= matrixSize; j++)
+                    {
+                        rowData[j] = emptyMatrix[i, j];
+                    }
+                    dataGridView.Rows.Add(rowData);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Ошибка при применении изменений: " + ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
