@@ -430,48 +430,48 @@ namespace Метод_наименьших_квадратов
         {
             public double[] Coefficients;
         }
+        private double[] SolveLeastSquares(double[,] matrixA, double[] vectorB)
+        {
+            var A = Matrix<double>.Build.DenseOfArray(matrixA);
+            var B = Vector<double>.Build.Dense(vectorB);
+
+            // Используем стандартные методы C# для решения системы линейных уравнений
+            double[] coefficients = A.Svd().Solve(B).ToArray();
+
+            return coefficients;
+        }
+
         private PolynomialCoefficients LeastSquaresMethod(int degree, double[,] data)
         {
             int rowCount = data.GetLength(0);
-            int matrixSize = degree + 1;
+            int columnCount = degree + 1;
 
-            // Создаем матрицу A и вектор B для системы уравнений
-            double[,] A = new double[matrixSize, matrixSize];
-            double[] B = new double[matrixSize];
+            double[,] matrixA = new double[rowCount, columnCount];
+            double[] vectorB = new double[rowCount];
 
-            // Заполняем матрицу A и вектор B
-            for (int i = 0; i < matrixSize; i++)
+            // Заполняем матрицу A и вектор B из данных DataGridView
+            for (int i = 0; i < rowCount; i++)
             {
-                for (int j = 0; j < matrixSize; j++)
+                for (int j = 0; j < columnCount; j++)
                 {
-                    A[i, j] = 0;
-                    for (int k = 0; k < rowCount; k++)
-                    {
-                        A[i, j] += Math.Pow(data[k, j], i);
-                    }
+                    matrixA[i, j] = Convert.ToDouble(dataGridView.Rows[i].Cells[$"A{j + 1}"].Value);
                 }
 
-                B[i] = 0;
-                for (int k = 0; k < rowCount; k++)
-                {
-                    B[i] += data[k, matrixSize - 1] * Math.Pow(data[k, i], i);
-                }
+                vectorB[i] = Convert.ToDouble(dataGridView.Rows[i].Cells["B"].Value);
             }
 
-            // Решаем систему уравнений (Ax = B) для нахождения коэффициентов
-            Matrix<double> matrixA = DenseMatrix.OfArray(A);
-            Vector<double> vectorB = Vector<double>.Build.Dense(B);
-            Vector<double> result = matrixA.Solve(vectorB);
+            // Вызываем метод наименьших квадратов для нахождения коэффициентов
+            double[] coefficients = SolveLeastSquares(matrixA, vectorB);
 
-            return new PolynomialCoefficients { Coefficients = result.ToArray() };
+            // Возвращаем результат в виде структуры
+            PolynomialCoefficients result;
+            result.Coefficients = coefficients;
+
+            return result;
         }
 
-        private double[] SolveSystemOfEquations(double[,] A, double[] B)
-        {
-            return new double[A.GetLength(0)];
-        }
 
-        private void ClearButton_Click(object sender, EventArgs e)
+    private void ClearButton_Click(object sender, EventArgs e)
         {
             textBoxN.Clear();
             textBox5.Clear();
