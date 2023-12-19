@@ -316,6 +316,11 @@ namespace Метод_наименьших_квадратов
             LoadFromExcelAndApply();
         }
 
+        private bool TryParseNumeric(object value, out double result)
+        {
+            return double.TryParse(Convert.ToString(value, CultureInfo.InvariantCulture), NumberStyles.Any, CultureInfo.InvariantCulture, out result);
+        }
+
         private Tuple<string[,], int> ExportExcel()
         {
             OpenFileDialog ofd = new OpenFileDialog();
@@ -341,19 +346,22 @@ namespace Метод_наименьших_квадратов
             {
                 for (int j = 0; j < lastColumn; j++)
                 {
-                    // Преобразуем текст ячейки в строковом представлении в тип double
-                    if (double.TryParse(ObjWorkSheet.Cells[i + 1, j + 1].Text.ToString(),
-                                        System.Globalization.NumberStyles.Any,
-                                        CultureInfo.InvariantCulture,
-                                        out double cellValue))
+                    // Получаем значение ячейки как объект типа object
+                    object cellValue = ObjWorkSheet.Cells[i + 1, j + 1].Value;
+
+                    // Пытаемся преобразовать значение ячейки в число
+                    if (TryParseNumeric(cellValue, out double numericValue))
                     {
                         // Преобразуем значение ячейки в строку с учетом возможного минуса и дробной части
-                        list[i, j] = cellValue.ToString("G2");
+                        list[i, j] = numericValue.ToString("G2", CultureInfo.InvariantCulture);
                     }
                     else
                     {
-                        // Если не удалось преобразовать, сохраняем текст ячейки как есть
-                        list[i, j] = ObjWorkSheet.Cells[i + 1, j + 1].Text.ToString();
+                        // Если не удалось преобразовать, показываем MessageBox
+                        MessageBox.Show($"Значение в столбце {GetColumnName(j + 1)} на строке {i + 1} не является числом.", "Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+                        // Устанавливаем пустую строку или другое значение по вашему выбору
+                        list[i, j] = string.Empty;
                     }
                 }
             }
@@ -363,6 +371,29 @@ namespace Метод_наименьших_квадратов
             GC.Collect();
 
             return Tuple.Create(list, lastRow);
+        }
+
+        private bool IsNumeric(object value)
+        {
+            // Проверяем, является ли объект числом
+            return double.TryParse(Convert.ToString(value, CultureInfo.InvariantCulture), out _);
+        }
+
+        private string GetColumnName(int columnIndex)
+        {
+            // Получаем имя столбца по индексу (A, B, C, ..., Z, AA, AB, ...)
+            const string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            int dividend = columnIndex;
+            string columnName = "";
+
+            while (dividend > 0)
+            {
+                int modulo = (dividend - 1) % 26;
+                columnName = letters[modulo] + columnName;
+                dividend = (dividend - modulo) / 26;
+            }
+
+            return columnName;
         }
 
         private void LoadFromExcelAndApply()
