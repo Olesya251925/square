@@ -525,7 +525,6 @@ namespace Метод_наименьших_квадратов
             }
         }
 
-
         private void ClearDataGridView()
         {
             dataGridView.Columns.Clear();
@@ -536,48 +535,60 @@ namespace Метод_наименьших_квадратов
         {
             public double[] Coefficients;
         }
+
+        //библиотека MathNet.Numerics выполняет решение системы линейных уравнений
+        //методом наименьших квадратов с использованием сингулярного разложения (SVD).
+        //в методе SolveLeastSquares
+        
+        // Метод для решения системы линейных уравнений методом наименьших квадратов
         private double[] SolveLeastSquares(double[,] matrixA, double[] vectorB)
         {
+            // Преобразуем массивы в объекты библиотеки MathNet.Numerics
             var A = Matrix<double>.Build.DenseOfArray(matrixA);
             var B = Vector<double>.Build.Dense(vectorB);
 
-            // Используем стандартные методы C# для решения системы линейных уравнений
+            // Используем сингулярное разложение (SVD) для решения системы линейных уравнений
             double[] coefficients = A.Svd().Solve(B).ToArray();
 
             return coefficients;
         }
 
+        // Метод для применения метода наименьших квадратов к данным из DataGridView и получения коэффициентов аппроксимирующего полинома
         private PolynomialCoefficients LeastSquaresMethod(int degree, double[,] data)
         {
+            // Получаем количество строк и столбцов в матрице данных
             int rowCount = data.GetLength(0);
             int columnCount = degree + 1;
 
+            // Инициализируем матрицу A и вектор B
             double[,] matrixA = new double[rowCount, columnCount];
             double[] vectorB = new double[rowCount];
 
-            // Заполняем матрицу A и вектор B из данных DataGridView
+            // Заполняем матрицу A и вектор B данными из DataGridView
             for (int i = 0; i < rowCount; i++)
             {
                 for (int j = 0; j < columnCount; j++)
                 {
+                    // Заполняем матрицу A значениями из ячеек DataGridView
                     matrixA[i, j] = Convert.ToDouble(dataGridView.Rows[i].Cells[$"A{j + 1}"].Value);
                 }
 
+                // Заполняем вектор B значениями из ячеек DataGridView
                 vectorB[i] = Convert.ToDouble(dataGridView.Rows[i].Cells["B"].Value);
             }
 
-            // Вызываем метод наименьших квадратов для нахождения коэффициентов
+            // Вызываем метод SolveLeastSquares для нахождения коэффициентов аппроксимирующего полинома
             double[] coefficients = SolveLeastSquares(matrixA, vectorB);
 
-            // Возвращаем результат в виде структуры
+            // Создаем объект PolynomialCoefficients и заполняем его массивом коэффициентов
             PolynomialCoefficients result;
             result.Coefficients = coefficients;
 
+            // Возвращаем результат в виде структуры PolynomialCoefficients
             return result;
         }
 
-
-    private void ClearButton_Click(object sender, EventArgs e)
+        private void ClearButton_Click(object sender, EventArgs e)
         {
             textBoxN.Clear();
             textBox5.Clear();
