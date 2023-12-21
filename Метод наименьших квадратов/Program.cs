@@ -4,12 +4,12 @@ using OxyPlot;
 using OxyPlot.Series;
 using OxyPlot.WindowsForms;
 using OxyPlot.Axes;
-using MathNet.Symbolics;
 using Excel = Microsoft.Office.Interop.Excel;
 using System.Text;
 using System.Globalization;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
+using System.Linq;
 
 namespace Метод_наименьших_квадратов
 {
@@ -20,7 +20,6 @@ namespace Метод_наименьших_квадратов
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-
             MainForm mainForm = new MainForm();
             Application.Run(mainForm);
         }
@@ -34,45 +33,49 @@ namespace Метод_наименьших_квадратов
         private Button clearButton;
         private Button generButton;
         private Button excelButton;
-        private Button applyButton;
         private TextBox localPointsTextBox;
         private DataGridView dataGridView;
+        private DataGridView dataGridView1;
         private PlotView plotView;
         private Label line;
         private TextBox textBox5;
-
+        private Button applyButton;
         public MainForm()
         {
             InitializeComponent();
-            this.Size = new System.Drawing.Size(1050, 800);
+            this.Size = new System.Drawing.Size(1100, 800);
         }
 
         private void InitializeComponent()
         {
             labelN = new Label();
             labelN.AutoSize = true;
+            labelN.Location = new System.Drawing.Point(50, 62);
             labelN.Location = new System.Drawing.Point(6, 13);
             labelN.Name = "label2";
             labelN.Size = new System.Drawing.Size(61, 13);
             labelN.TabIndex = 2;
+            labelN.Text = "Введите n:";
             labelN.Text = "Введите степень:";
 
             textBoxN = new TextBox();
+            textBoxN.Location = new System.Drawing.Point(96, 62);
             textBoxN.Location = new System.Drawing.Point(110, 13);
             textBoxN.Name = "textBox2";
             textBoxN.Size = new System.Drawing.Size(44, 20);
             textBoxN.TabIndex = 3;
-            
+
             line = new Label();
             line.AutoSize = true;
+            line.Location = new System.Drawing.Point(162, 65);
             line.Location = new System.Drawing.Point(6, 50);
             line.Name = "label3";
             line.Size = new System.Drawing.Size(73, 13);
             line.TabIndex = 11;
-            line.Text = "Размерность матрицы:";
+            line.Text = "Кол-во строк:";
 
             textBox5 = new TextBox();
-            textBox5.Location = new System.Drawing.Point(140, 45);
+            textBox5.Location = new System.Drawing.Point(100, 45);
             textBox5.Name = "textBox5";
             textBox5.Size = new System.Drawing.Size(36, 20);
             textBox5.TabIndex = 13;
@@ -112,40 +115,46 @@ namespace Метод_наименьших_квадратов
             excelButton.Text = "Загрузить из EXCEL";
             excelButton.UseVisualStyleBackColor = true;
             excelButton.Click += ExcelButton_Click;
-
+            
             applyButton = new Button();
             applyButton.Location = new System.Drawing.Point(150, 150);
             applyButton.Size = new System.Drawing.Size(120, 23);
             applyButton.TabIndex = 7;
-            applyButton.Text = "Применить ";
+            applyButton.Text = "Применить";
             applyButton.UseVisualStyleBackColor = true;
             applyButton.Click += ApplyButton_Click;
 
             localPointsTextBox = new TextBox();
-            localPointsTextBox.Location = new System.Drawing.Point(355, 12);
+            localPointsTextBox.Location = new System.Drawing.Point(180, 12);
             localPointsTextBox.Multiline = true;
             localPointsTextBox.Name = "textBox3";
-            localPointsTextBox.Size = new System.Drawing.Size(215, 237);
+            localPointsTextBox.Size = new System.Drawing.Size(250, 90);
             localPointsTextBox.TabIndex = 8;
             localPointsTextBox.UseWaitCursor = true;
 
             dataGridView = new DataGridView();
             dataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridView.Location = new System.Drawing.Point(580, 10);
+            dataGridView.Location = new System.Drawing.Point(450, 12);
             dataGridView.Name = "dataGridView";
-            dataGridView.Size = new System.Drawing.Size(450, 245);
+            dataGridView.Size = new System.Drawing.Size(245, 245);
             dataGridView.TabIndex = 9;
+
+            dataGridView1 = new DataGridView();
+            dataGridView1.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dataGridView1.Location = new System.Drawing.Point(700, 12);
+            dataGridView1.Size = new System.Drawing.Size(340, 245);
+            dataGridView1.TabIndex = 9;
 
             plotView = new PlotView();
             plotView.Location = new System.Drawing.Point(12, 255);
             plotView.Name = "plotView";
             plotView.PanCursor = System.Windows.Forms.Cursors.Hand;
-            plotView.Size = new System.Drawing.Size(1000, 509);
+            plotView.Size = new System.Drawing.Size(1050, 509);
             plotView.TabIndex = 10;
             plotView.ZoomHorizontalCursor = System.Windows.Forms.Cursors.SizeWE;
             plotView.ZoomRectangleCursor = System.Windows.Forms.Cursors.SizeNWSE;
             plotView.ZoomVerticalCursor = System.Windows.Forms.Cursors.SizeNS;
-            
+
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             ClientSize = new System.Drawing.Size(892, 667);
             Controls.Add(plotView);
@@ -157,13 +166,13 @@ namespace Метод_наименьших_квадратов
             Controls.Add(calculateButton);
             Controls.Add(textBoxN);
             Controls.Add(labelN);
+            Controls.Add(dataGridView1);
             Controls.Add(line);
             Controls.Add(textBox5);
             Controls.Add(applyButton);
             ResumeLayout(false);
             PerformLayout();
         }
-
         private void CalculateButton_Click(object sender, EventArgs e)
         {
             try
@@ -175,35 +184,34 @@ namespace Метод_наименьших_квадратов
                     return;
                 }
 
-                // Проверяем значение в textBox5
-                if (!int.TryParse(textBox5.Text, out int matrixSize) || matrixSize < 2 || matrixSize > 50)
+                int degree;
+                if (!int.TryParse(textBoxN.Text, out degree) || degree < 1)
                 {
-                    MessageBox.Show("Введите корректное значение для размера матрицы (от 2 до 50).", "Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Введите корректное значение для степени полинома.", "Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
-                int degree = int.Parse(textBoxN.Text);
+                double[,] data = new double[dataGridView.Rows.Count, 2];
 
-                int rowCount = dataGridView.Rows.Count;
-                double[,] data = new double[rowCount, degree + 1]; // Изменяем размерность матрицы
+                // Создаем матрицу A
+                double[,] A = new double[degree + 1, degree + 1];
 
                 // Заполняем матрицу данными из DataGridView
-                for (int i = 0; i < rowCount; i++)
+                for (int i = 0; i < dataGridView.Rows.Count; i++)
                 {
-                    for (int j = 0; j <= degree; j++)
-                    {
-                        data[i, j] = Convert.ToDouble(dataGridView.Rows[i].Cells[$"A{j + 1}"].Value); // Используем A1, A2, ..., B
-                    }
+                    data[i, 0] = Convert.ToDouble(dataGridView.Rows[i].Cells["xi"].Value);
+                    data[i, 1] = Convert.ToDouble(dataGridView.Rows[i].Cells["yi"].Value);
                 }
 
                 // Вызываем метод наименьших квадратов для нахождения коэффициентов
                 PolynomialCoefficients coefficients = LeastSquaresMethod(degree, data);
 
                 // Выводим коэффициенты функции в текстовое поле
+                
                 StringBuilder coefficientsString = new StringBuilder("Коэффициенты функции: \r\n");
                 for (int i = 0; i < coefficients.Coefficients.Length; i++)
                 {
-                    coefficientsString.Append($"a{i + 1} = {coefficients.Coefficients[i]:F2}\r\n");
+                    coefficientsString.Append($"a{i} = {coefficients.Coefficients[coefficients.Coefficients.Length - 1 - i]:F2}\r\n");
                 }
 
                 localPointsTextBox.Text = coefficientsString.ToString();
@@ -213,16 +221,16 @@ namespace Метод_наименьших_квадратов
 
                 // Добавляем точки из DataGridView на график
                 ScatterSeries scatterSeries = new ScatterSeries { MarkerType = MarkerType.Circle };
-                for (int i = 0; i < rowCount; i++)
+                for (int i = 0; i < data.GetLength(0); i++)
                 {
-                    scatterSeries.Points.Add(new ScatterPoint(data[i, 0], data[i, degree]));
+                    scatterSeries.Points.Add(new ScatterPoint(data[i, 0], data[i, 1]));
                 }
                 plotModel.Series.Add(scatterSeries);
 
                 // Находим минимальное и максимальное значения X для построения функции
                 double minX = data[0, 0];
                 double maxX = data[0, 0];
-                for (int i = 1; i < rowCount; i++)
+                for (int i = 1; i < data.GetLength(0); i++)
                 {
                     minX = Math.Min(minX, data[i, 0]);
                     maxX = Math.Max(maxX, data[i, 0]);
@@ -237,6 +245,7 @@ namespace Метод_наименьших_квадратов
                 plotModel.Axes.Add(new OxyPlot.Axes.LinearAxis { MajorGridlineStyle = LineStyle.Solid, MinorGridlineStyle = LineStyle.Dot, Position = AxisPosition.Left });
 
                 plotView.Model = plotModel;
+
             }
             catch (Exception ex)
             {
@@ -248,50 +257,34 @@ namespace Метод_наименьших_квадратов
         {
             try
             {
-                int matrixSize;
-                if (!int.TryParse(textBox5.Text, out matrixSize) || matrixSize <= 0)
+                int rowCount;
+                if (!int.TryParse(textBox5.Text, out rowCount) || rowCount < 0)
                 {
-                    MessageBox.Show("Введите корректный размер матрицы.", "Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Введите корректное число строк.", "Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
                 // Очищаем существующие данные в DataGridView и добавляем столбцы, если их нет
                 ClearDataGridView();
+                dataGridView.Columns.Clear();
+                dataGridView.Rows.Clear();
 
-                // Добавляем столбцы с соответствующими именами в DataGridView
-                for (int i = 0; i < matrixSize; i++)
+                // Добавляем столбцы "xi" и "yi" в DataGridView
+                dataGridView.Columns.Add("xi", "xi");
+                dataGridView.Columns.Add("yi", "yi");
+
+                // Задаем формат отображения ячеек с двумя знаками после запятой
+                dataGridView.Columns.Cast<DataGridViewColumn>().ToList().ForEach(f => f.DefaultCellStyle.Format = "0.00");
+
+                // Добавляем строки в DataGridView
+                for (int i = 0; i < rowCount; i++)
                 {
-                    string columnName = $"A{i + 1}";
-                    dataGridView.Columns.Add(columnName, columnName);
-                }
-
-                // Добавляем столбец "B", если его еще нет
-                dataGridView.Columns.Add("B", "B");
-
-                // Создаем пустую матрицу и выводим ее в DataGridView
-                double[,] emptyMatrix = new double[matrixSize, matrixSize + 1];
-                for (int i = 0; i < matrixSize; i++)
-                {
-                    for (int j = 0; j <= matrixSize; j++)
-                    {
-                        emptyMatrix[i, j] = 0.0; // Заполняем матрицу нулями
-                    }
-                }
-
-                // Выводим пустую матрицу в DataGridView
-                for (int i = 0; i < matrixSize; i++)
-                {
-                    object[] rowData = new object[matrixSize + 1];
-                    for (int j = 0; j <= matrixSize; j++)
-                    {
-                        rowData[j] = emptyMatrix[i, j];
-                    }
-                    dataGridView.Rows.Add(rowData);
+                    dataGridView.Rows.Add();
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Ошибка при применении изменений: " + ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Ошибка при применении данных: " + ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -310,13 +303,6 @@ namespace Метод_наименьших_квадратов
             try
             {
                 int rowCount;
-
-                if (!int.TryParse(textBox5.Text, out rowCount) || rowCount < 2 || rowCount > 50)
-                {
-                    MessageBox.Show("Введите корректное число строк в диапазоне от 2 до 50.", "Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
                 if (!int.TryParse(textBox5.Text, out rowCount) || rowCount <= 0)
                 {
                     MessageBox.Show("Введите корректное число строк.", "Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -324,28 +310,16 @@ namespace Метод_наименьших_квадратов
                 }
 
                 // Очищаем существующие данные в DataGridView и добавляем столбцы, если их нет
+                ClearDataGridView();
                 dataGridView.Columns.Clear();
                 dataGridView.Rows.Clear();
 
                 // Определяем размерность матрицы и вектора
                 int matrixSize = rowCount;
-                int vectorSize = rowCount;
 
-                // Добавляем столбцы с соответствующими именами в DataGridView, если их еще нет
-                for (int i = 0; i < matrixSize; i++)
-                {
-                    string columnName = $"A{i + 1}";
-                    if (dataGridView.Columns[columnName] == null)
-                    {
-                        dataGridView.Columns.Add(columnName, columnName);
-                    }
-                }
-
-                // Добавляем столбец "B", если его еще нет
-                if (dataGridView.Columns["B"] == null)
-                {
-                    dataGridView.Columns.Add("B", "B");
-                }
+                // Добавляем столбцы "xi" и "yi" в DataGridView
+                dataGridView.Columns.Add("xi", "xi");
+                dataGridView.Columns.Add("yi", "yi");
 
                 // Генерируем новые данные и выводим их в DataGridView
                 Random random = new Random();
@@ -354,17 +328,12 @@ namespace Метод_наименьших_квадратов
                     // Создаем массив данных для строки
                     object[] rowData = new object[matrixSize + 1];
 
-                    // Генерация случайных значений для столбцов A1, A2, ..., B
-                    for (int j = 0; j < matrixSize; j++)
-                    {
-                        string columnName = $"A{j + 1}";
-                        double value = Math.Round(random.NextDouble() * 10, 2);
-                        rowData[j] = value;
-                    }
+                    // Генерация случайных значений для столбцов "xi" и "yi"
+                    double xi = Math.Round((random.NextDouble() - 0.5) * 20, 2); // Генерация от -10 до 10
+                    double yi = Math.Round((random.NextDouble() - 0.5) * 20, 2); // Генерация от -10 до 10
 
-                    // Генерация случайного значения для столбца B
-                    double y = Math.Round(random.NextDouble() * 10, 2);
-                    rowData[matrixSize] = y;
+                    rowData[0] = xi;
+                    rowData[1] = yi;
 
                     // Добавляем строку с данными в DataGridView
                     dataGridView.Rows.Add(rowData);
@@ -376,6 +345,12 @@ namespace Метод_наименьших_квадратов
             }
         }
 
+        private void ClearDataGridView()
+        {
+            // Очищаем значения в столбцах XColumn и YColumn в DataGridView
+            dataGridView.Rows.Clear();
+        }
+
         private double CalculateApproximation(Func<double, double> function, double x, int degree)
         {
             double result = 0;
@@ -385,15 +360,9 @@ namespace Метод_наименьших_квадратов
             }
             return result;
         }
-
         private void ExcelButton_Click(object sender, EventArgs e)
         {
             LoadFromExcelAndApply();
-        }
-
-        private bool TryParseNumeric(object value, out double result)
-        {
-            return double.TryParse(Convert.ToString(value, CultureInfo.InvariantCulture), NumberStyles.Any, CultureInfo.InvariantCulture, out result);
         }
 
         private Tuple<string[,], int> ExportExcel()
@@ -401,134 +370,136 @@ namespace Метод_наименьших_квадратов
             OpenFileDialog ofd = new OpenFileDialog();
             ofd.DefaultExt = "*.xls;*.xlsx";
             ofd.Filter = "Файлы Excel (Spisok.xlsx)|*.xlsx";
-
+           
             if (!(ofd.ShowDialog() == DialogResult.OK))
                 return Tuple.Create<string[,], int>(null, 0);
-
+            
             Excel.Application ObjWorkExcel = new Excel.Application();
             Excel.Workbook ObjWorkBook = ObjWorkExcel.Workbooks.Open(ofd.FileName);
             Excel.Worksheet ObjWorkSheet = (Excel.Worksheet)ObjWorkBook.Sheets[1];
+            
             var lastCell = ObjWorkSheet.Cells.SpecialCells(Excel.XlCellType.xlCellTypeLastCell);
-
             int lastRow = (int)lastCell.Row;
             int lastColumn = (int)lastCell.Column;
-
+            
             // Изменяем размер массива list, чтобы вместить данные
             string[,] list = new string[lastRow, lastColumn];
-
+            
             // Заполняем массив list данными из Excel
             for (int i = 0; i < lastRow; i++)
             {
                 for (int j = 0; j < lastColumn; j++)
                 {
-                    // Получаем значение ячейки как объект типа object
-                    object cellValue = ObjWorkSheet.Cells[i + 1, j + 1].Value;
-
-                    // Пытаемся преобразовать значение ячейки в число
-                    if (TryParseNumeric(cellValue, out double numericValue))
+                    // Преобразуем текст ячейки в строковом представлении в тип double
+                    if (double.TryParse(ObjWorkSheet.Cells[i + 1, j + 1].Text.ToString(),
+                    System.Globalization.NumberStyles.Any,
+                    new CultureInfo("ru-RU"),  // Используйте "ru-RU" вместо CultureInfo.InvariantCulture
+                    out double cellValue))
                     {
                         // Преобразуем значение ячейки в строку с учетом возможного минуса и дробной части
-                        list[i, j] = numericValue.ToString("G2", CultureInfo.InvariantCulture);
+                        list[i, j] = cellValue.ToString("G2", new CultureInfo("ru-RU"));
                     }
                     else
                     {
-                        // Если не удалось преобразовать, показываем MessageBox
-                        MessageBox.Show($"Значение в столбце {GetColumnName(j + 1)} на строке {i + 1} не является числом.", "Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-
-                        // Устанавливаем пустую строку или другое значение по вашему выбору
-                        list[i, j] = string.Empty;
+                        // Если не удалось преобразовать, сохраняем текст ячейки как есть
+                        list[i, j] = ObjWorkSheet.Cells[i + 1, j + 1].Text.ToString();
                     }
                 }
             }
-
             ObjWorkBook.Close(false, Type.Missing, Type.Missing);
             ObjWorkExcel.Quit();
             GC.Collect();
-
             return Tuple.Create(list, lastRow);
         }
-
-        private bool IsNumeric(object value)
-        {
-            // Проверяем, является ли объект числом
-            return double.TryParse(Convert.ToString(value, CultureInfo.InvariantCulture), out _);
-        }
-
-        private string GetColumnName(int columnIndex)
-        {
-            // Получаем имя столбца по индексу (A, B, C, ..., Z, AA, AB, ...)
-            const string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            int dividend = columnIndex;
-            string columnName = "";
-
-            while (dividend > 0)
-            {
-                int modulo = (dividend - 1) % 26;
-                columnName = letters[modulo] + columnName;
-                dividend = (dividend - modulo) / 26;
-            }
-
-            return columnName;
-        }
-
         private void LoadFromExcelAndApply()
         {
-            Tuple<string[,], int> excelData = ExportExcel();
-
-            if (excelData.Item2 > 0)
+            try
             {
-                string[,] list = excelData.Item1;
-                int rowCount = excelData.Item2;
-
-                // Очищаем существующие данные в DataGridView и добавляем столбцы, если их нет
                 ClearDataGridView();
 
-                // Определяем размерность матрицы и вектора
-                int matrixSize = list.GetLength(1) - 1; // Уменьшаем на 1, чтобы исключить последний столбец
-                int vectorSize = rowCount;
+                // Используем ExportExcel для получения данных из Excel
+                var excelData = ExportExcel();
 
-                // Добавляем столбцы с соответствующими именами в DataGridView
-                for (int i = 0; i < matrixSize; i++)
+                // Проверяем, что данные успешно получены
+                if (excelData.Item1 != null && excelData.Item2 > 0)
                 {
-                    dataGridView.Columns.Add($"A{i + 1}", $"A{i + 1}");
+                    // Задаем имена столбцов в DataGridView
+                    dataGridView.Columns.Add("xi", "xi");
+                    dataGridView.Columns.Add("yi", "yi");
+
+                    // Заполняем DataGridView данными из Excel
+                    for (int i = 0; i < excelData.Item2; i++)
+                    {
+                        object[] rowData = new object[2];
+                        rowData[0] = excelData.Item1[i, 0];
+                        rowData[1] = excelData.Item1[i, 1];
+
+                        dataGridView.Rows.Add(rowData);
+                    }
                 }
-                dataGridView.Columns.Add("B", "B");
-
-                // Заполняем DataGridView данными из Excel
-                for (int i = 0; i < rowCount; i++)
+                else
                 {
-                    object[] rowData = new object[matrixSize + 1];
-
-                    for (int j = 0; j < matrixSize; j++)
-                    {
-                        if (double.TryParse(list[i, j], NumberStyles.Any, CultureInfo.InvariantCulture, out double cellValue))
-                        {
-                            rowData[j] = cellValue;
-                        }
-                        else
-                        {
-                            rowData[j] = list[i, j];
-                        }
-                    }
-
-                    if (double.TryParse(list[i, matrixSize], NumberStyles.Any, CultureInfo.InvariantCulture, out double lastCellValue))
-                    {
-                        rowData[matrixSize] = lastCellValue;
-                    }
-                    else
-                    {
-                        rowData[matrixSize] = list[i, matrixSize];
-                    }
-
-                    dataGridView.Rows.Add(rowData);
+                    MessageBox.Show("Не удалось загрузить данные из Excel.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Ошибка при загрузке данных из Excel: " + ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
-
-        private void ClearDataGridView()
+        private PolynomialCoefficients LeastSquaresMethod(int degree, double[,] data)
         {
-            dataGridView.Columns.Clear();
-            dataGridView.Rows.Clear();
+            // Определяем количество строк в массиве data
+            int rowCount = data.GetLength(0) - 1;
+
+            // Определяем размер матрицы A и вектора B, увеличивая на 1 степень полинома
+            int matrixSize = degree + 1;
+
+            // Создаем квадратную матрицу A для хранения коэффициентов системы линейных уравнений
+            double[,] A = new double[matrixSize, matrixSize];
+
+            // Создаем вектор B для хранения правой части системы линейных уравнений
+            double[] B = new double[matrixSize];
+
+            // Цикл для обхода строк матрицы A и вектора B
+            for (int i = 0; i < matrixSize; i++)
+            {
+                // Вложенный цикл для заполнения значений в строке матрицы A
+                for (int j = 0; j < matrixSize; j++)
+                {
+                    // Задаем начальное значение в матрице A
+                    A[i, j] = 0;
+
+                    // Вложенный цикл для вычисления суммы степеней data[k, 0] в соответствии с формулой
+                    for (int k = 0; k < rowCount; k++)
+                    {
+                        A[i, j] += Math.Pow(data[k, 0], matrixSize - 1 - i + matrixSize - 1 - j);
+                    }
+                }
+
+                // Задаем начальное значение в векторе B
+                B[i] = 0;
+
+                // Вложенный цикл для вычисления суммы значений вектора B
+                for (int k = 0; k < rowCount; k++)
+                {
+                    B[i] += data[k, 1] * Math.Pow(data[k, 0], matrixSize - 1 - i);
+                }
+            }
+
+
+            // Выводим матрицу A и вектор B в DataGridView для визуализации
+            FillDataGridViewFromMatrixAndVector("A", A, "B", B);
+
+            // Решаем систему линейных уравнений методом наименьших квадратов
+            double[] coefficients = SolveLeastSquares(A, B);
+
+            // Округляем коэффициенты и изменяем порядок, чтобы они соответствовали порядку степеней полинома
+            int decimalPlaces = 7;
+            coefficients = coefficients.Reverse().Select(c => Math.Round(c, decimalPlaces)).ToArray();
+
+            // Возвращаем структуру PolynomialCoefficients с найденными коэффициентами
+            return new PolynomialCoefficients { Coefficients = coefficients };
         }
 
         public struct PolynomialCoefficients
@@ -536,10 +507,6 @@ namespace Метод_наименьших_квадратов
             public double[] Coefficients;
         }
 
-        //библиотека MathNet.Numerics выполняет решение системы линейных уравнений
-        //методом наименьших квадратов с использованием сингулярного разложения (SVD).
-        //в методе SolveLeastSquares
-        
         // Метод для решения системы линейных уравнений методом наименьших квадратов
         private double[] SolveLeastSquares(double[,] matrixA, double[] vectorB)
         {
@@ -552,40 +519,40 @@ namespace Метод_наименьших_квадратов
 
             return coefficients;
         }
-
-        // Метод для применения метода наименьших квадратов к данным из DataGridView и получения коэффициентов аппроксимирующего полинома
-        private PolynomialCoefficients LeastSquaresMethod(int degree, double[,] data)
+        private void FillDataGridViewFromMatrixAndVector(string matrixTitle, double[,] matrix, string vectorTitle, double[] vector)
         {
-            // Получаем количество строк и столбцов в матрице данных
-            int rowCount = data.GetLength(0);
-            int columnCount = degree + 1;
+            // Очищаем dataGridView1 перед заполнением новыми данными
+            dataGridView1.Rows.Clear();
+            dataGridView1.Columns.Clear();
 
-            // Инициализируем матрицу A и вектор B
-            double[,] matrixA = new double[rowCount, columnCount];
-            double[] vectorB = new double[rowCount];
-
-            // Заполняем матрицу A и вектор B данными из DataGridView
-            for (int i = 0; i < rowCount; i++)
+            // Создаем новую колонку для каждого столбца матрицы
+            for (int j = 0; j < matrix.GetLength(1); j++)
             {
-                for (int j = 0; j < columnCount; j++)
-                {
-                    // Заполняем матрицу A значениями из ячеек DataGridView
-                    matrixA[i, j] = Convert.ToDouble(dataGridView.Rows[i].Cells[$"A{j + 1}"].Value);
-                }
-
-                // Заполняем вектор B значениями из ячеек DataGridView
-                vectorB[i] = Convert.ToDouble(dataGridView.Rows[i].Cells["B"].Value);
+                dataGridView1.Columns.Add($"{matrixTitle}{j}", $"{matrixTitle}{j}");
             }
 
-            // Вызываем метод SolveLeastSquares для нахождения коэффициентов аппроксимирующего полинома
-            double[] coefficients = SolveLeastSquares(matrixA, vectorB);
+            // Добавляем колонку для вектора
+            dataGridView1.Columns.Add(vectorTitle, vectorTitle);
 
-            // Создаем объект PolynomialCoefficients и заполняем его массивом коэффициентов
-            PolynomialCoefficients result;
-            result.Coefficients = coefficients;
+            // Задаем формат отображения ячеек с двумя знаками после запятой
+            dataGridView1.Columns.Cast<DataGridViewColumn>().ToList().ForEach(f => f.DefaultCellStyle.Format = "0.00");
 
-            // Возвращаем результат в виде структуры PolynomialCoefficients
-            return result;
+            // Заполняем dataGridView1 данными из матрицы и вектора
+            for (int i = 0; i < matrix.GetLength(0); i++)
+            {
+                DataGridViewRow row = new DataGridViewRow();
+                row.CreateCells(dataGridView1);
+
+                for (int j = 0; j < matrix.GetLength(1); j++)
+                {
+                    row.Cells[j].Value = matrix[i, j];
+                }
+
+                // Заполняем dataGridView1 данными из вектора
+                row.Cells[matrix.GetLength(1)].Value = vector[i];
+
+                dataGridView1.Rows.Add(row);
+            }
         }
 
         private void ClearButton_Click(object sender, EventArgs e)
@@ -596,6 +563,9 @@ namespace Метод_наименьших_квадратов
 
             dataGridView.Columns.Clear();
             dataGridView.Rows.Clear();
+
+            dataGridView1.Columns.Clear();
+            dataGridView1.Rows.Clear();
         }
 
     }
